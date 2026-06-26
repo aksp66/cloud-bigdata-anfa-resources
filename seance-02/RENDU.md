@@ -30,7 +30,18 @@ Cette séance a permis de comprendre les fondations de la conteneurisation (name
 
 ## Bonus multi-stage (optionnel)
 
-Non abouti. Le `docker build -f Dockerfile.multistage` a échoué à plusieurs reprises avec une erreur `EOF` côté moteur Docker (`failed to receive status: rpc error: code = Unavailable`), y compris avec le builder legacy (`DOCKER_BUILDKIT=0`) et après nettoyage du cache de build. Le moteur Docker Desktop a même perdu l'état de ses conteneurs en cours de tentative, signe d'une instabilité du moteur plutôt que d'une erreur dans le `Dockerfile.multistage` lui-même. La machine ne disposant que de 8 Go de RAM, l'augmentation de la mémoire allouée à Docker Desktop n'était pas une option raisonnable. Ce point n'étant pas noté, il a été laissé de côté pour prioriser les livrables obligatoires ; aucune comparaison de taille v1/v2 n'est donc disponible.
+Abouti après plusieurs tentatives. Les premiers essais ont échoué avec une erreur `EOF` côté moteur Docker (`failed to receive status: rpc error: code = Unavailable`), signe d'une instabilité passagère du moteur Docker Desktop (8 Go de RAM sur la machine) plutôt que d'un problème dans le `Dockerfile.multistage`. Après nettoyage du cache de build et une nouvelle tentative, le build a abouti.
+
+**Comparaison des tailles :**
+
+| Image | Taille (disk usage) | Content size |
+|---|---|---|
+| `anfa-analyse:v1` | 1,17 Go | 445 Mo |
+| `anfa-analyse:v2-multistage` | 1,17 Go | 445 Mo |
+
+**Gain observé : nul.** `docker history` montre que les deux images ont exactement les mêmes couches lourdes : ~216 Mo pour l'installation de Java (`apt-get install openjdk-17-jre-headless`) et ~362 Mo pour les paquets Python (`pyspark`/`py4j`). Le `Dockerfile.multistage` déplace l'installation pip dans une étape `builder` séparée puis copie `/root/.local` dans l'image finale via `COPY --from=builder`, mais comme `pyspark` est un paquet pur Python (aucune compilation native nécessaire), l'étape `builder` n'apporte aucun outil de compilation à éliminer de l'image finale — il n'y a donc rien à « laisser derrière soi ». Ce résultat confirme exactement l'avertissement du TP (« Honnêteté pédagogique », partie Bonus) : pour une application dépendante de Java/PySpark, le gain du multi-stage est minime, contrairement à des applications compilées (Go, Rust) où il peut être spectaculaire.
+
+L'image a été testée avec succès (`docker run` sur `anfa-analyse:v2-multistage` avec le volume du référentiel monté) : sortie identique à celle de `v1` (statistiques du référentiel Anfa correctement affichées).
 
 ## Réponses aux exercices d'application
 
