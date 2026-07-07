@@ -80,7 +80,7 @@ docker compose up -d
 
 | Conteneur | Image | Rôle | Ports |
 | --- | --- | --- | --- |
-| `anfa-postgres` | `postgres:16-alpine` | Metadata DB Airflow | 5432 |
+| `anfa-postgres` | `postgres:18-alpine` | Metadata DB Airflow | 5432 |
 | `anfa-airflow-init` | `apache/airflow:2.8.1` | Init DB + création admin (éphémère) | — |
 | `anfa-airflow-scheduler` | `apache/airflow:2.8.1` | Scheduler + LocalExecutor | — |
 | `anfa-airflow-webserver` | `apache/airflow:2.8.1` | UI Airflow | 8088 |
@@ -128,7 +128,7 @@ docker exec -e HOME=/tmp anfa-spark-master /opt/spark/bin/spark-submit \
 
 Le DAG `hello_anfa` contient 2 tâches Python enchaînées :
 
-```
+```text
 dire_bonjour → lister_lignes
 ```
 
@@ -147,7 +147,7 @@ dire_bonjour → lister_lignes
 
 Le pipeline orchestre 4 tâches séquentielles :
 
-```
+```text
 generer_trajets → analyser_heures_pointe → verifier_resultats → notifier
 ```
 
@@ -164,7 +164,7 @@ generer_trajets → analyser_heures_pointe → verifier_resultats → notifier
 
 **Logs de `verifier_resultats` :**
 
-```
+```text
 [OK] 13 fichiers trouvés (1842.3 Ko)
   - heures_de_pointe/ligne_id=L01/part-00000-xxx.snappy.parquet
   - heures_de_pointe/ligne_id=L02/part-00000-xxx.snappy.parquet
