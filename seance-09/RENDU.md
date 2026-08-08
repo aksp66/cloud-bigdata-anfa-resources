@@ -1,13 +1,19 @@
 # Rendu — Séance 9
 
-**Nom et prénom :** <Votre nom complet>
-**Identifiant GitHub :** <votre-username>
-**Date de soumission :** <JJ/MM/AAAA>
+**Nom et prénom :** AHLI Kossi Sitsofé Pédro
+**Identifiant GitHub :** aksp66
+**Date de soumission :** 08/08/2026
 
 ## Résumé de la séance
 
-<2-4 lignes : stack Prometheus/Grafana déployée, exportateur de fraîcheur Anfa
-instrumenté, dashboard construit, alerte configurée et déclenchée sur panne simulée.>
+Une stack de monitoring complète a été déployée : Prometheus (collecte), Node Exporter et
+cAdvisor (métriques système/conteneurs), Grafana (visualisation), et un exportateur métier
+custom simulant la fraîcheur des traitements Anfa. Les 4 cibles ont été vérifiées comme
+actives dans Prometheus, un dashboard prêt à l'emploi a été importé et un panneau
+personnalisé (jauge de fraîcheur avec seuils) construit dans Grafana. Une alerte a été
+configurée sur cette métrique, puis déclenchée en simulant une panne silencieuse du
+pipeline (aucun conteneur ne plante, mais l'horodatage du dernier traitement cesse
+d'avancer) — l'alerte est passée à l'état Firing avant de revenir à Normal après réparation.
 
 ## Étapes principales
 
@@ -31,10 +37,20 @@ instrumenté, dashboard construit, alerte configurée et déclenchée sur panne 
 
 ## Réflexion personnelle
 
-<3-5 lignes : en quoi cette séance répond-elle directement à la situation-problème
-d'Awa dans le CM ? Qu'est-ce que la métrique de fraîcheur vous a permis de voir que
-les autres métriques (CPU, RAM, statut des conteneurs) ne montraient pas ?>
+Cette séance répond directement au problème d'Awa dans le CM : `kubectl get pods` ou
+`docker compose ps` ne montrent que "ça tourne", jamais si le résultat produit est encore
+utile. En simulant la panne (fichier sentinelle `/tmp/anfa_en_panne`), tous les conteneurs
+sont restés à l'état `Up` sans aucune erreur dans les logs — exactement comme le pipeline
+d'Awa qui tournait sur un fichier vide sans planter. Seule la métrique de fraîcheur
+(`time() - anfa_dernier_traitement_timestamp`) a révélé le problème : elle a grimpé sans
+redescendre, ce qu'aucune métrique de CPU, de RAM ou de statut de conteneur n'aurait pu
+montrer, puisque ces ressources restaient parfaitement normales pendant toute la panne.
 
 ## Difficultés rencontrées
 
-<Aucune | Décrivez brièvement.>
+Aucune difficulté majeure. Petit point d'attention : simuler la panne avec `docker stop`
+sur l'exportateur aurait fait perdre la cible côté Prometheus (métrique disparue, jauge à
+"No data") au lieu de la faire monter en continu — il fallait bien utiliser le fichier
+sentinelle pour que le processus reste vivant tout en cessant de mettre à jour
+l'horodatage, ce qui reproduit fidèlement le symptôme réel d'un pipeline silencieusement
+en panne.
