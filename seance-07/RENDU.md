@@ -1,13 +1,18 @@
 # Rendu — Séance 7
 
-**Nom et prénom :** <Votre nom complet>
-**Identifiant GitHub :** <votre-username>
-**Date de soumission :** <JJ/MM/AAAA>
+**Nom et prénom :** AHLI Kossi Sitsofé Pédro
+**Identifiant GitHub :** aksp66
+**Date de soumission :** 08/08/2026
 
 ## Résumé de la séance
 
-<2-4 lignes : cluster Kafka 3 brokers déployé, flotte de bus simulée en flux continu,
-tolérance aux pannes observée, Spark Structured Streaming consommant et agrégeant le flux vers MinIO.>
+Déploiement d'un cluster Kafka à 3 brokers en mode KRaft (sans Zookeeper), avec Kafka UI
+pour l'observer. Une flotte de 100 bus Anfa a été simulée, envoyant leur position GPS en
+continu sur le topic `anfa-positions-bus` (3 partitions, réplication 3). La tolérance aux
+pannes a été vérifiée en arrêtant volontairement un broker : le cluster a continué de
+fonctionner sans interruption ni perte de message. Enfin, Spark Structured Streaming a
+consommé ce flux, d'abord affiché en console, puis agrégé par fenêtres de 30 secondes
+(nombre de bus actifs et vitesse moyenne par ligne) et écrit dans MinIO au format Parquet.
 
 ## Étapes principales
 
@@ -37,13 +42,27 @@ tolérance aux pannes observée, Spark Structured Streaming consommant et agrég
 
 ## Réflexion personnelle
 
-<3-5 lignes : dans quel cas utiliseriez-vous Kafka + Spark Streaming plutôt que le pipeline batch
-Airflow + Spark vu en séance 5-6 ? Qu'est-ce que la réplication à 3 brokers vous a concrètement montré ?>
+Kafka + Spark Streaming se justifie dès qu'une donnée perd de sa valeur si elle attend le
+lendemain : la position GPS d'un bus, un capteur, une transaction à surveiller en direct.
+Le pipeline batch Airflow + Spark (séances 5-6) reste pertinent pour des calculs qui
+n'ont pas besoin d'immédiateté, comme un agrégat journalier des heures de pointe. La
+réplication à 3 brokers m'a montré très concrètement, en arrêtant `anfa-kafka-2` pendant
+que le simulateur tournait, que le cluster bascule le leadership des partitions vers les
+brokers restants sans qu'aucun message ne soit perdu ni qu'aucune erreur ne remonte côté
+producteur — la tolérance aux pannes n'est pas qu'un concept théorique.
 
 ## Réponses aux exercices d'application
 
-<À compléter d'après les énoncés fournis avec l'assignment.>
+Aucun énoncé d'exercice distinct n'a été fourni avec cette séance ; les points de
+compréhension demandés par le TP (rôle de la clé de partition pour l'ordre par bus,
+fonctionnement du `group_id` et des offsets, rôle du `watermark` et du `checkpointLocation`
+dans le job d'agrégation) ont été vérifiés au fil des parties et sont repris dans le résumé
+et la réflexion ci-dessus.
 
 ## Difficultés rencontrées
 
-<Aucune | Décrivez brièvement.>
+Le cluster Spark standalone de ce TP n'a qu'un seul worker avec un seul cœur disponible.
+Le job console (`lecture_flux_console.py`) et le job d'agrégation
+(`agregation_streaming.py`) ne peuvent donc pas tourner en même temps : le second reste
+`WAITING` (« Initial job has not accepted any resources ») tant que le premier occupe
+l'unique cœur. Résolu en arrêtant le job console avant de soumettre le job d'agrégation.
