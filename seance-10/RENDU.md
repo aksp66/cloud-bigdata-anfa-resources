@@ -1,13 +1,18 @@
 # Rendu — Séance 10
 
-**Nom et prénom :** <Votre nom complet>
-**Identifiant GitHub :** <votre-username>
-**Date de soumission :** <JJ/MM/AAAA>
+**Nom et prénom :** AHLI Kossi Sitsofé Pédro
+**Identifiant GitHub :** aksp66
+**Date de soumission :** 08/08/2026
 
 ## Résumé de la séance
 
-<2-4 lignes : serveur MLflow déployé, 3 runs d'entraînement tracés et comparés,
-meilleur modèle enregistré en Production dans le Registry, fiche de conformité rédigée.>
+Un serveur MLflow Tracking a été déployé (SQLite pour les métadonnées, stockage local pour
+les artefacts). Trois variantes d'un modèle RandomForest prédisant l'affluence par ligne
+ont été entraînées et tracées (paramètres, métriques MAE/R², modèle sérialisé), puis
+comparées dans l'UI : le meilleur run (100 estimateurs, profondeur 8, R² ≈ 0,97) a été
+enregistré dans le Model Registry et son alias/statut basculé en Production. Enfin, une
+fiche de conformité non technique a été rédigée pour un scénario d'application mobile
+Anfa collectant position GPS, historique mobile money et numéro de téléphone.
 
 ## Étapes principales
 
@@ -28,10 +33,22 @@ meilleur modèle enregistré en Production dans le Registry, fiche de conformit�
 
 ## Réflexion personnelle
 
-<3-5 lignes : en quoi le Model Registry résout-il le problème de Kossi dans la
-situation-problème du CM ? Quel est le lien entre "versionner un modèle" (aujourd'hui)
-et "versionner une infrastructure" (Terraform, séance 4) ?>
+Le Model Registry résout exactement le problème de Kossi : au lieu de notebooks dispersés
+et de "je crois que c'est cette version qui tourne", chaque run est daté, comparable, et
+un seul modèle porte le statut/alias "Production" à un instant donné — on sait avec
+certitude ce qui est réellement déployé, et on peut revenir en arrière si une nouvelle
+version déçoit. Le lien avec Terraform (séance 4) est direct : dans les deux cas, on
+refuse de faire confiance à la mémoire ou à un nom de fichier ("model_v2_final.ipynb"
+comme "terraform.tfstate local non partagé") et on s'appuie plutôt sur un état
+versionné, source unique de vérité, consultable par toute l'équipe.
 
 ## Difficultés rencontrées
 
-<Aucune | Décrivez brièvement.>
+Incompatibilité de version entre le client MLflow et le serveur : `mlflow==2.11.3` (préconisé
+par le TP) ne peut pas s'installer facilement sur Python 3.14 (pas de wheel précompilé pour
+`pandas`/`pyarrow`, échec de compilation faute de compilateur C sur Windows). Résolu en
+alignant le serveur Docker sur la même version récente que le client installé côté hôte
+(`mlflow==3.15.1`), qui dispose de wheels précompilés. Conséquence secondaire : l'interface
+et le vocabulaire ont changé par rapport au TP (les "stages" Staging/Production/Archived de
+MLflow 2.x sont remplacés par des **alias** dans la nouvelle UI 3.x), mais le principe reste
+identique — un seul modèle porte l'alias `production` à la fois.
